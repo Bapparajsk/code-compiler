@@ -7,8 +7,8 @@ const { cppCodeHandler } = require('../lib/cppCodeHandler');
 
 router.post('/', async (req, res) => {
     try {
-        const { code, input, lang, userName } = req.body;
-        if (!code || !input || !lang || !userName) {
+        const { code, lang, userName } = req.body;
+        if (!code || !lang || !userName) {
             return  res.status(400).json({
                 type: "error",
                 error: "isEmpty is inputs"
@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
         // Compile and execute codes
         let output;
         if (lang === "java") {
-            output = await javaCodeHandler(code, input, codeDir, userName, 1);
+            output = await javaCodeHandler(code, codeDir, userName, 1);
         } else if(lang === 'c' || lang === "c++") {
             output = await cppCodeHandler(code, input, codeDir, userName, 1, 100);
         } else {
