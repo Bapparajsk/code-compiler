@@ -4,11 +4,12 @@ const { create } = require('../lib/directoryCreate');
 const { deleteFile } = require('../lib/deleteFiles');
 const { javaCodeHandler } = require('../lib/javaCodeHandler');
 const { cppCodeHandler } = require('../lib/cppCodeHandler');
+const {getCode, margeCode} = require("../lib/template");
 
 router.post('/', async (req, res) => {
     try {
-        const { code, lang, userName } = req.body;
-        if (!code || !lang || !userName) {
+        const { code, lang, userName, userCode, subProblem, subSolution } = req.body;
+        if (!code || !lang || !userName || !userCode || !subProblem || !subSolution) {
             return  res.status(400).json({
                 type: "error",
                 error: "isEmpty is inputs"
@@ -17,7 +18,6 @@ router.post('/', async (req, res) => {
 
         // Delete folder
         await deleteFile(`./temp/${userName}`);
-
         await create('./temp');
         await create(`./temp/${userName}`);
         const codeDir = cuid.slug();
@@ -25,7 +25,35 @@ router.post('/', async (req, res) => {
         // Compile and execute codes
         let output;
         if (lang === "java") {
-            output = await javaCodeHandler(code, codeDir, userName, 1);
+            let n = subSolution.length;
+
+            for (let i = 0; i < n; i++) {
+                const Code = getCode(margeCode(code, subProblem[i]).split('\n'), userCode);
+                output = await javaCodeHandler(Code, codeDir, userName, 1);
+
+                if (output.result === null) {
+                    console.log(output.result);
+                    // Handle error
+                    return res.status(500).json({
+                        type: "error",
+                        error: output.error,
+                        message: 'code error',
+                        subProblemNumber: i,
+                    });
+                }
+
+                output.result = output.result.toString().replaceAll(/\r\n/g, "");
+                if (output.result !== subSolution[i].toString()) {
+                    console.log(output.result);
+                    console.log(subSolution[i]);
+                    return res.status(500).json({
+                        type: "error",
+                        message: 'your code is wrong',
+                        output: output.result,
+                        subProblemNumber: i,
+                    });
+                }
+            }
         } else if(lang === 'c' || lang === "c++") {
             output = await cppCodeHandler(code, input, codeDir, userName, 1, 100);
         } else {
@@ -44,13 +72,11 @@ router.post('/', async (req, res) => {
             });
             return;
         }
-        console.log(output);
         return res.json({
             result : output.result
         });
     } catch (error) {
         console.error('An error occurred:', error);
-        // Handle error
         return res.status(500).json({
             type: "error",
             error
