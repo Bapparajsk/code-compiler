@@ -32,7 +32,6 @@ router.post('/', async (req, res) => {
                 output = await javaCodeHandler(Code, codeDir, userName, 1);
 
                 if (output.result === null) {
-                    console.log(output.result);
                     // Handle error
                     return res.status(500).json({
                         type: "error",
@@ -44,8 +43,6 @@ router.post('/', async (req, res) => {
 
                 output.result = output.result.toString().replaceAll(/\r\n/g, "");
                 if (output.result !== subSolution[i].toString()) {
-                    console.log(output.result);
-                    console.log(subSolution[i]);
                     return res.status(500).json({
                         type: "error",
                         message: 'your code is wrong',
